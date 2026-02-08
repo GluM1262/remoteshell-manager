@@ -66,11 +66,12 @@ class CommandExecutor:
                 self.logger.warning(f"Command timeout: {command}")
                 process.kill()
                 await process.wait()
+                execution_time = time.time() - start_time
                 return {
                     "stdout": "",
                     "stderr": f"Command timeout after {timeout} seconds",
                     "exit_code": -1,
-                    "execution_time": timeout
+                    "execution_time": round(execution_time, 3)
                 }
             
             execution_time = time.time() - start_time

@@ -4,7 +4,7 @@ Handles loading and validating configuration from YAML file.
 """
 
 import yaml
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 from dataclasses import dataclass, field
 
@@ -46,8 +46,8 @@ class LoggingConfig:
 class SecurityConfig:
     """Security configuration."""
     validate_ssl: bool = True
-    allowed_commands: Optional[list] = None
-    blocked_commands: Optional[list] = None
+    allowed_commands: Optional[List[str]] = None
+    blocked_commands: Optional[List[str]] = None
 
 class ConfigManager:
     """Manages client configuration."""
