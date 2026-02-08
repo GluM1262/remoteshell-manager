@@ -8,6 +8,7 @@ User=remoteshell
 Group=remoteshell
 WorkingDirectory=/opt/remoteshell/client
 Environment="PATH=/opt/remoteshell/venv/bin"
+ExecStart=/opt/remoteshell/venv/bin/python websocket_client.py
 ExecStart=/opt/remoteshell/venv/bin/python main.py
 
 # Security hardening
