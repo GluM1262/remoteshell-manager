@@ -54,6 +54,9 @@ class CommandExecutor:
         
         try:
             # Create subprocess
+            # NOTE: Using shell=True allows for shell features (pipes, redirection, etc.)
+            # but requires careful security validation via whitelist/blacklist to prevent
+            # command injection. All commands are validated before execution.
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,

@@ -51,8 +51,8 @@ class LoggingConfig:
 class SecurityConfig:
     """Security configuration."""
     validate_ssl: bool = True
-    allowed_commands: list = field(default_factory=list)
-    blocked_commands: list = field(default_factory=lambda: [
+    allowed_commands: list[str] = field(default_factory=list)
+    blocked_commands: list[str] = field(default_factory=lambda: [
         "rm -rf /",
         "mkfs",
         "dd if=/dev/zero"
