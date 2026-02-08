@@ -113,11 +113,11 @@ class CommandExecutor:
         
         # Check allowed commands (if whitelist is enabled)
         if self.config.security.allowed_commands:
-            allowed = False
+            is_allowed = False
             for allowed_cmd in self.config.security.allowed_commands:
                 if command.startswith(allowed_cmd):
-                    allowed = True
+                    is_allowed = True
                     break
-            return allowed
+            return is_allowed
         
         return True

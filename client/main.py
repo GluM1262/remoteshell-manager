@@ -81,7 +81,8 @@ def main():
         sys.exit(1)
     
     # Setup signal handlers
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(client.shutdown()))
     
