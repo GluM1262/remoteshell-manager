@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RemoteShell Manager</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>RemoteShell Manager <span class="status online" id="serverStatus">Online</span></h1>
+            <p>Web interface for remote command execution</p>
+        </div>
+        
+        <div id="messageContainer"></div>
+        
+        <div class="section">
+            <h2>Connected Devices <button class="refresh-btn" onclick="refreshDevices()">Refresh</button></h2>
+            <table id="devicesTable">
+                <thead>
+                    <tr>
+                        <th>Device ID</th>
+                        <th>Status</th>
+                        <th>Last Seen</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="devicesBody">
+                    <tr>
+                        <td colspan="4" class="empty-state">Loading devices...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>Send Command</h2>
+            <div class="command-form">
+                <select id="deviceSelect">
+                    <option value="">Select device...</option>
+                </select>
+                <input type="text" id="commandInput" placeholder="Enter command (e.g., ls -la, whoami, uptime)" />
+                <input type="number" id="timeoutInput" placeholder="Timeout (s)" min="1" max="300" style="flex: 0.3;" />
+                <button onclick="sendCommand()">Execute</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Command History <button class="refresh-btn" onclick="refreshHistory()">Refresh</button></h2>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Device</th>
+                        <th>Command</th>
+                        <th>Status</th>
+                        <th>Exit Code</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr>
+                        <td colspan="6" class="empty-state">No command history</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>

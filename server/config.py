@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     tls_key_path: Optional[str] = "tls/key.pem"
     tls_ca_path: Optional[str] = None
     
+    # Authentication
+    device_tokens: Optional[str] = None  # Comma-separated list of tokens
+    
     # Security Settings
     enable_command_whitelist: bool = False
     allowed_commands: List[str] = [
