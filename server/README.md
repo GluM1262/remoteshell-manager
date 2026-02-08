@@ -72,50 +72,6 @@ server/
 │       └── websocket.js # WebSocket client
 └── templates/           # Optional Jinja2 templates
 ```
-# RemoteShell Manager Server
-
-FastAPI server for remote Linux device management via WebSocket.
-
-## Features
-
-- **Command Queue System**: Queue commands for devices, even when offline
-- **Device Management**: Track device status, connection history
-- **SQLite History Storage**: Persistent storage of commands and results
-- **WebSocket Communication**: Real-time command execution
-- **REST API**: Complete API for device and command management
-- **Statistics & Analytics**: Command execution statistics
-- **History Export**: Export history to JSON or CSV
-
-## Installation
-
-FastAPI-based WebSocket server for remote shell command execution with device token authentication.
-
-## Features
-
-- **WebSocket Communication**: Real-time bidirectional communication
-- **Token-based Authentication**: Secure device authentication using tokens
-- **Command Execution**: Asynchronous shell command execution with timeout
-- **Security**: Command validation, blacklist filtering, and timeout protection
-- **Device Management**: Track connected devices and their status
-- **RESTful API**: Health check and device listing endpoints
-- **Logging**: Comprehensive logging for monitoring and debugging
-
-## Installation
-
-### Requirements
-
-- Python 3.9 or higher
-- pip (Python package manager)
-
-### Setup
-
-1. **Install dependencies:**
-
-```bash
-cd server
-pip install -r requirements.txt
-```
-
 ## Quick Start
 
 ```bash
