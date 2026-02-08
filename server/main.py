@@ -1,17 +1,25 @@
 """
-FastAPI server with TLS support and security manager.
+FastAPI server with TLS support, security, database, and queue management.
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
 import ssl
 from pathlib import Path
 import logging
 from typing import Optional
+import os
 
 from config import Settings
 from security import SecurityManager, SecurityPolicy
+from database import Database
+from queue_manager import QueueManager
+from auth import AuthManager
+from websocket_handler import ConnectionManager, WebSocketHandler
+from shell_executor import ShellExecutor
 
 # Configure logging
 logging.basicConfig(
@@ -34,6 +42,30 @@ security_policy = SecurityPolicy(
 )
 security_manager = SecurityManager(security_policy)
 
+# Initialize database
+database = Database(db_path=os.getenv("DATABASE_PATH", "remoteshell.db"))
+
+# Initialize auth manager
+auth_manager = AuthManager()
+
+# Initialize queue manager
+queue_manager = QueueManager(database)
+
+# Initialize connection manager
+connection_manager = ConnectionManager()
+
+# Initialize WebSocket handler
+websocket_handler = WebSocketHandler(
+    connection_manager=connection_manager,
+    security_manager=security_manager,
+    database=database,
+    queue_manager=queue_manager,
+    auth_manager=auth_manager
+)
+
+# Initialize shell executor (for server-side operations)
+shell_executor = ShellExecutor()
+
 # Create FastAPI app
 app = FastAPI(title="RemoteShell Manager Server")
 
@@ -46,8 +78,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store active connections
-active_connections: dict = {}
+# Mount static files for web interface (if directory exists)
+static_path = Path("static")
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    await database.connect()
+    logger.info("Server startup complete")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown."""
+    await database.close()
+    logger.info("Server shutdown complete")
 
 
 @app.get("/")
@@ -60,12 +108,222 @@ async def root():
             "tls_enabled": settings.use_tls,
             "whitelist_enabled": settings.enable_command_whitelist,
             "max_execution_time": settings.max_execution_time
-        }
+        },
+        "connections": connection_manager.get_connection_count()
     }
 
 
+@app.get("/api/devices")
+async def list_devices():
+    """
+    List all registered devices.
+    
+    Returns:
+        List of devices with status
+    """
+    devices = await database.list_devices()
+    
+    # Add online status from connection manager
+    for device in devices:
+        device_id = device.get("device_id")
+        device["is_online"] = connection_manager.is_connected(device_id)
+    
+    return {"devices": devices}
+
+
+@app.get("/api/devices/{device_id}")
+async def get_device(device_id: str):
+    """
+    Get device information.
+    
+    Args:
+        device_id: Device identifier
+        
+    Returns:
+        Device details
+    """
+    device = await database.get_device(device_id)
+    
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    
+    device["is_online"] = connection_manager.is_connected(device_id)
+    return device
+
+
+@app.post("/api/devices/{device_id}/command")
+async def send_command(
+    device_id: str,
+    command: str = Query(..., description="Command to execute"),
+    timeout: Optional[int] = Query(None, description="Execution timeout")
+):
+    """
+    Send command to device.
+    
+    Args:
+        device_id: Target device identifier
+        command: Command to execute
+        timeout: Optional timeout override
+        
+    Returns:
+        Command status
+    """
+    # Validate command
+    is_valid, error_msg = security_manager.validate_command(command, device_id)
+    
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+    
+    # Get effective timeout
+    effective_timeout = security_manager.get_max_execution_time(timeout)
+    
+    # Check if device is online
+    if connection_manager.is_connected(device_id):
+        # Send command directly
+        success = await connection_manager.send_message(device_id, {
+            "type": "command",
+            "command": command,
+            "timeout": effective_timeout
+        })
+        
+        if success:
+            # Add to history as pending
+            cmd_id = await database.add_command_history(
+                device_id=device_id,
+                command=command,
+                status="sent"
+            )
+            
+            return {
+                "status": "sent",
+                "device_id": device_id,
+                "command": command,
+                "timeout": effective_timeout,
+                "command_id": cmd_id
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send command")
+    else:
+        # Queue command for offline device
+        queue_id = await queue_manager.queue_command_for_device(
+            device_id=device_id,
+            command=command,
+            timeout=effective_timeout
+        )
+        
+        if queue_id:
+            return {
+                "status": "queued",
+                "device_id": device_id,
+                "command": command,
+                "timeout": effective_timeout,
+                "queue_id": queue_id,
+                "message": "Device offline - command queued"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to queue command")
+
+
+@app.get("/api/devices/{device_id}/history")
+async def get_command_history(
+    device_id: str,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0)
+):
+    """
+    Get command history for device.
+    
+    Args:
+        device_id: Device identifier
+        limit: Maximum number of records
+        offset: Pagination offset
+        
+    Returns:
+        Command history
+    """
+    history = await database.get_command_history(
+        device_id=device_id,
+        limit=limit,
+        offset=offset
+    )
+    
+    return {
+        "device_id": device_id,
+        "history": history,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@app.get("/api/devices/{device_id}/queue")
+async def get_device_queue(device_id: str):
+    """
+    Get queued commands for device.
+    
+    Args:
+        device_id: Device identifier
+        
+    Returns:
+        Queue status
+    """
+    return await queue_manager.get_queue_status(device_id)
+
+
+@app.get("/api/history")
+async def get_all_history(
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0)
+):
+    """
+    Get command history for all devices.
+    
+    Args:
+        limit: Maximum number of records
+        offset: Pagination offset
+        
+    Returns:
+        Command history
+    """
+    history = await database.get_command_history(
+        device_id=None,
+        limit=limit,
+        offset=offset
+    )
+    
+    return {
+        "history": history,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@app.get("/web")
+async def web_interface():
+    """
+    Serve web interface.
+    
+    Returns:
+        HTML page
+    """
+    html_file = Path("static/index.html")
+    
+    if html_file.exists():
+        return HTMLResponse(content=html_file.read_text())
+    else:
+        return HTMLResponse(content="""
+        <html>
+        <head><title>RemoteShell Manager</title></head>
+        <body>
+        <h1>RemoteShell Manager</h1>
+        <p>Web interface not installed.</p>
+        <p>API is available at <a href="/docs">/docs</a></p>
+        </body>
+        </html>
+        """)
+
+
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, token: str = None):
+async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
     """
     WebSocket endpoint for device connections.
     
@@ -73,77 +331,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None):
         websocket: WebSocket connection
         token: Authentication token (query parameter)
     """
-    await websocket.accept()
-    
-    # Basic token validation (simplified for this implementation)
-    if not token:
-        await websocket.send_json({
-            "type": "error",
-            "message": "Authentication token required"
-        })
-        await websocket.close()
-        return
-    
-    device_id = f"device_{token[:8]}"
-    active_connections[device_id] = websocket
-    
-    logger.info(f"Device connected: {device_id}")
-    
-    try:
-        # Send welcome message
-        await websocket.send_json({
-            "type": "connected",
-            "device_id": device_id,
-            "message": "Connected to RemoteShell Manager"
-        })
-        
-        # Handle incoming messages
-        async for message in websocket.iter_json():
-            if message.get("type") == "command":
-                command = message.get("command", "")
-                
-                # Validate command
-                is_valid, error_msg = security_manager.validate_command(
-                    command, 
-                    device_id=device_id
-                )
-                
-                if not is_valid:
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": error_msg
-                    })
-                    continue
-                
-                # Get effective timeout
-                timeout = security_manager.get_max_execution_time(
-                    message.get("timeout")
-                )
-                
-                logger.info(f"Command from {device_id}: {command} (timeout: {timeout}s)")
-                
-                # Send command execution acknowledgment
-                # In a real implementation, this would execute the command
-                await websocket.send_json({
-                    "type": "command_queued",
-                    "command": command,
-                    "timeout": timeout,
-                    "message": "Command queued for execution"
-                })
-            
-            elif message.get("type") == "ping":
-                await websocket.send_json({
-                    "type": "pong",
-                    "timestamp": message.get("timestamp")
-                })
-    
-    except WebSocketDisconnect:
-        logger.info(f"Device disconnected: {device_id}")
-    except Exception as e:
-        logger.error(f"Error handling device {device_id}: {e}")
-    finally:
-        if device_id in active_connections:
-            del active_connections[device_id]
+    await websocket_handler.handle_connection(websocket, token)
 
 
 def create_ssl_context() -> Optional[ssl.SSLContext]:
