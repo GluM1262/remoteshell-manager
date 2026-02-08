@@ -32,13 +32,6 @@ class SecurityConfig:
     max_execution_time: int = 30
     max_command_length: int = 1000
     allow_shell_operators: bool = False
-    host: str = "localhost"
-    port: int = 8000
-    use_ssl: bool = False
-    reconnect_interval: int = 5
-    max_reconnect_attempts: int = 0
-    ping_interval: int = 30
-    ping_timeout: int = 10
 
 
 @dataclass
@@ -61,11 +54,9 @@ class ExecutionConfig:
 class LoggingConfig:
     """Logging configuration."""
     level: str = "INFO"
-    file: Optional[str] = None
-    max_size: int = 10485760  # 10MB
     file: Optional[str] = "client.log"
+    max_size: int = 10485760  # 10MB
     console: bool = True
-    max_size: int = 10485760
     backup_count: int = 5
 
 

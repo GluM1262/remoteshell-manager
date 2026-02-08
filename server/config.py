@@ -1,22 +1,4 @@
 """
-Server configuration with security and TLS settings.
-"""
-
-from typing import List, Optional
-from pydantic_settings import BaseSettings
-
-
-class Settings(BaseSettings):
-    """Server configuration settings."""
-"""Configuration settings for RemoteShell Manager."""
-
-from pydantic_settings import BaseSettings
-from typing import Optional
-
-
-class Settings(BaseSettings):
-    """Application settings."""
-"""
 Configuration Management Module
 
 Handles server configuration using pydantic-settings.
@@ -24,17 +6,19 @@ Loads settings from environment variables and .env file.
 """
 
 from pydantic_settings import BaseSettings
-from typing import Dict
+from typing import Dict, List, Optional
 
 
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables or .env file.
+    Combines all configuration options from all versions.
     """
     
     # Server settings
     host: str = "0.0.0.0"
     port: int = 8000
+    debug: bool = False
     log_level: str = "INFO"
     
     # TLS/SSL Settings
@@ -43,8 +27,12 @@ class Settings(BaseSettings):
     tls_key_path: Optional[str] = "tls/key.pem"
     tls_ca_path: Optional[str] = None
     
-    # Authentication
-    device_tokens: Optional[str] = None  # Comma-separated list of tokens
+    # Security
+    secret_key: str = "change-me-in-production"
+    token_expiration: int = 3600  # seconds
+    
+    # Authentication - Device tokens in format: "device_id:token,device_id:token"
+    device_tokens: str = ""
     
     # Security Settings
     enable_command_whitelist: bool = False
@@ -58,20 +46,6 @@ class Settings(BaseSettings):
     max_command_length: int = 1000
     allow_shell_operators: bool = False
     
-    # User execution (for documentation)
-    run_as_user: str = "remoteshell"
-    run_as_group: str = "remoteshell"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-    debug: bool = False
-    log_level: str = "INFO"
-    
-    # Security
-    secret_key: str = "change-me-in-production"
-    token_expiration: int = 3600  # seconds
-    
     # Database
     database_path: str = "remoteshell.db"
     database_pool_size: int = 5
@@ -81,26 +55,21 @@ class Settings(BaseSettings):
     max_queue_size: int = 100
     queue_timeout: int = 300  # 5 minutes
     command_default_timeout: int = 30  # seconds
+    command_timeout: int = 30
     
     # WebSocket
     websocket_timeout: int = 60  # seconds
     websocket_ping_interval: int = 30  # seconds
     
     # CORS
-    cors_origins: list[str] = ["*"]
+    cors_origins: List[str] = ["*"]
     cors_credentials: bool = True
-    cors_methods: list[str] = ["*"]
-    cors_headers: list[str] = ["*"]
+    cors_methods: List[str] = ["*"]
+    cors_headers: List[str] = ["*"]
     
-    # Security - Device tokens in format: "device_id:token,device_id:token"
-    device_tokens: str = ""
-    
-    # Command execution
-    command_timeout: int = 30
-    max_command_length: int = 1000
-    
-    # Logging
-    log_level: str = "INFO"
+    # User execution (for documentation)
+    run_as_user: str = "remoteshell"
+    run_as_group: str = "remoteshell"
     
     class Config:
         env_file = ".env"
