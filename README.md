@@ -15,12 +15,20 @@ A client-server application for remote Linux device management via WebSocket con
 - **Auto-Reconnect**: Automatic reconnection on connection loss
 
 ## 📋 System Requirements
+Remote Linux device management system via WebSocket.
+
+## Description
+
+RemoteShell Manager is a client-server application for remote execution of commands on Linux devices in real-time mode.
+
+## Technology Stack
 
 - Python 3.9 or higher
 - Linux operating system (for server)
 - Network connectivity between client and server
 
 ## 🏗️ Project Structure
+## Project Structure
 
 ```
 remoteshell-manager/
@@ -143,11 +151,8 @@ python main.py --host localhost --port 8000
 
 3. You'll see the interactive prompt:
 ```
-============================================================
 RemoteShell Manager - Interactive Client
-============================================================
 Connecting to localhost:8000...
-============================================================
 
 ✅ Connected successfully!
 
@@ -185,13 +190,10 @@ Use Ctrl+C to force quit.
 
 ⏳ Executing command...
 
-============================================================
 Exit Code: 0
-============================================================
 
 --- STDOUT ---
 Hello from remote server!
-============================================================
 ```
 
 ### Client Command-Line Options
@@ -499,5 +501,15 @@ Future enhancements planned:
 - [Pydantic Documentation](https://docs.pydantic.dev/)
 
 ---
+├── server/                 # Server application
+├── shared/                 # Shared components
+└── docker-compose.yml     # Docker configuration
+```
+
+## Installation and Setup
+
+Instructions will be added in the following commits.
+
+## License
 
 **Made with ❤️ for the Linux community**
