@@ -15,10 +15,14 @@ import requests
 import websockets
 import time
 
-SERVER_URL = "http://localhost:8000"
-WS_URL = "ws://localhost:8000"
-DEVICE_ID = "test_device_001"
-DEVICE_TOKEN = "test_token_123"
+import os
+import uuid
+
+SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000")
+WS_URL = os.getenv("WS_URL", "ws://localhost:8000")
+DEVICE_ID = os.getenv("TEST_DEVICE_ID", f"test_device_{uuid.uuid4().hex[:8]}")
+DEVICE_TOKEN = os.getenv("TEST_DEVICE_TOKEN", uuid.uuid4().hex)
+
 
 
 async def test_device_connection():

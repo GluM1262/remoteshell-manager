@@ -7,6 +7,11 @@ from datetime import datetime
 import uuid
 import logging
 
+try:
+    from .config import settings
+except ImportError:
+    from config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -307,7 +312,7 @@ class QueueManager:
                     command_id=cmd_data['command_id'],
                     device_id=cmd_data['device_id'],
                     command=cmd_data['command'],
-                    timeout=30,  # Default timeout
+                    timeout=settings.command_default_timeout,
                     created_at=datetime.fromisoformat(cmd_data['created_at']),
                     priority=0
                 )
