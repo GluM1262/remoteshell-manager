@@ -1,3 +1,45 @@
+# Client Configuration Example
+# Copy this to config.yaml and update values
+
+server:
+  url: "ws://localhost:8000/ws"  # WebSocket server URL (use wss:// for TLS)
+  token: "your-device-token-here"  # Authentication token
+  use_ssl: false  # Use wss:// protocol with TLS
+
+# Security settings
+security:
+  validate_ssl: true              # Validate server SSL certificate
+  
+  # Command whitelist (if enabled, only these commands are allowed)
+  enable_whitelist: false         # Enable strict whitelist mode
+  allowed_commands:               # Commands allowed when whitelist enabled
+    - "ls"
+    - "pwd"
+    - "whoami"
+    - "hostname"
+    - "uptime"
+    - "df -h"
+    - "free -m"
+    - "ps aux"
+    - "systemctl status"
+  
+  # Command blacklist (always enforced)
+  blocked_commands:               # Commands that are never allowed
+    - "rm -rf /"
+    - "mkfs"
+    - "dd if=/dev/zero"
+    - "chmod -R 777 /"
+    - ":(){ :|:& };:"            # Fork bomb
+  
+  # Execution limits
+  max_execution_time: 30          # Maximum seconds for command execution
+  max_command_length: 1000        # Maximum command length in characters
+  allow_shell_operators: false    # Allow |, &&, ;, etc.
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "remoteshell-client.log"
 # RemoteShell Client Configuration
 
 # Server connection settings

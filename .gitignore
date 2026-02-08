@@ -39,6 +39,30 @@ env/
 *.swp
 *.swo
 *~
+.DS_Store
+
+# Environment files
+.env
+*.env
+!.env.example
+
+# TLS certificates (generated locally)
+server/tls/*.pem
+server/tls/*.key
+server/tls/*.crt
+
+# Client configuration
+client/config.yaml
+!client/config.yaml.example
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
 
 # Database
 *.db

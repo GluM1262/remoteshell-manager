@@ -1,0 +1,33 @@
+# RemoteShell Client Configuration Example
+
+server:
+  url: "ws://localhost:8000/ws"  # Use wss:// for TLS
+  token: "example_token_abc123456789"
+  use_ssl: false
+  reconnect_interval: 10
+  ping_interval: 30
+
+security:
+  validate_ssl: true
+  enable_whitelist: true
+  allowed_commands:
+    - "ls"
+    - "pwd"
+    - "whoami"
+    - "hostname"
+    - "uptime"
+    - "df"
+    - "du"
+    - "free"
+    - "ps"
+    - "top"
+  blocked_commands: []
+  max_execution_time: 30
+  max_command_length: 1000
+  allow_shell_operators: false
+
+logging:
+  level: "INFO"
+  file: "client.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
