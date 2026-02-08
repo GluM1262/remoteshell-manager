@@ -7,9 +7,14 @@ import json
 import asyncio
 from datetime import datetime
 
-from .database import Database
-from .queue_manager import QueueManager
-from .models import WebSocketMessage
+try:
+    from .database import Database
+    from .queue_manager import QueueManager
+    from .models import WebSocketMessage
+except ImportError:
+    from database import Database
+    from queue_manager import QueueManager
+    from models import WebSocketMessage
 
 logger = logging.getLogger(__name__)
 

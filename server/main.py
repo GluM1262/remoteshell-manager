@@ -7,22 +7,40 @@ import logging
 from typing import Optional, List
 from datetime import datetime
 
-from .config import settings
-from .database import Database
-from .queue_manager import QueueManager
-from .history import HistoryManager
-from .websocket_handler import ConnectionManager
-from .models import (
-    SendCommandRequest,
-    CommandResponse,
-    CommandStatus,
-    DeviceStatus,
-    HistoryQuery,
-    Statistics,
-    CleanupRequest,
-    ExportRequest,
-    BulkCommandRequest,
-)
+try:
+    from .config import settings
+    from .database import Database
+    from .queue_manager import QueueManager
+    from .history import HistoryManager
+    from .websocket_handler import ConnectionManager
+    from .models import (
+        SendCommandRequest,
+        CommandResponse,
+        CommandStatus,
+        DeviceStatus,
+        HistoryQuery,
+        Statistics,
+        CleanupRequest,
+        ExportRequest,
+        BulkCommandRequest,
+    )
+except ImportError:
+    from config import settings
+    from database import Database
+    from queue_manager import QueueManager
+    from history import HistoryManager
+    from websocket_handler import ConnectionManager
+    from models import (
+        SendCommandRequest,
+        CommandResponse,
+        CommandStatus,
+        DeviceStatus,
+        HistoryQuery,
+        Statistics,
+        CleanupRequest,
+        ExportRequest,
+        BulkCommandRequest,
+    )
 
 # Configure logging
 logging.basicConfig(
@@ -590,7 +608,7 @@ async def cleanup_history(request: CleanupRequest):
 
 @app.get("/api/history/export")
 async def export_history(
-    format: str = Query("json", regex="^(json|csv)$"),
+    format: str = Query("json", pattern="^(json|csv)$"),
     device_id: Optional[str] = None,
     limit: int = Query(1000, ge=1, le=10000)
 ):
