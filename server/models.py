@@ -6,7 +6,7 @@ Defines data models for WebSocket messages and device information.
 
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class CommandMessage(BaseModel):
@@ -29,7 +29,7 @@ class ResponseMessage(BaseModel):
     stderr: str
     exit_code: int
     execution_time: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ErrorMessage(BaseModel):
@@ -38,7 +38,7 @@ class ErrorMessage(BaseModel):
     """
     type: Literal["error"]
     message: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class DeviceInfo(BaseModel):

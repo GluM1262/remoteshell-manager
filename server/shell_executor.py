@@ -27,6 +27,12 @@ def is_command_safe(command: str) -> bool:
     """
     Basic validation to check if command is potentially dangerous.
     
+    SECURITY NOTE: This is a blacklist approach which is not foolproof.
+    For production environments with untrusted input, strongly consider:
+    - Implementing a whitelist of allowed commands
+    - Using more sophisticated sandboxing (e.g., containers, chroot)
+    - Restricting shell features (disable pipes, redirects, etc.)
+    
     Args:
         command: Command string to validate
         
@@ -77,8 +83,13 @@ async def execute_command(command: str, timeout: int = 30) -> Dict:
     start_time = time.time()
     
     try:
-        # Parse command for safe execution
-        # Use shell=True for complex commands but be aware of security implications
+        # Note: Using shell=True allows complex commands with pipes, redirects, etc.
+        # This is necessary for flexibility but requires careful input validation.
+        # The is_command_safe() function provides basic protection.
+        # For production environments with untrusted input, consider:
+        # 1. Using a command whitelist approach
+        # 2. Restricting to specific command patterns
+        # 3. Using shell=False with shlex.split() for simpler commands
         process = await asyncio.create_subprocess_shell(
             command,
             stdout=asyncio.subprocess.PIPE,

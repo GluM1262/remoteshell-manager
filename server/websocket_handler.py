@@ -7,7 +7,7 @@ Manages WebSocket connections, device registry, and message routing.
 import logging
 import json
 from typing import Dict
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import WebSocket, WebSocketDisconnect
 from server.models import CommandMessage, ResponseMessage, ErrorMessage, DeviceInfo
 from server.shell_executor import execute_command
@@ -42,7 +42,7 @@ class ConnectionManager:
         self.active_connections[device_id] = websocket
         self.device_info[device_id] = DeviceInfo(
             device_id=device_id,
-            connected_at=datetime.utcnow()
+            connected_at=datetime.now(timezone.utc)
         )
         logger.info(f"Device {device_id} connected. Total devices: {len(self.active_connections)}")
     
@@ -132,7 +132,7 @@ async def handle_websocket(websocket: WebSocket, device_id: str):
                     
                     # Update last command time
                     if device_id in manager.device_info:
-                        manager.device_info[device_id].last_command = datetime.utcnow()
+                        manager.device_info[device_id].last_command = datetime.now(timezone.utc)
                     
                     # Execute command with timeout
                     timeout = cmd_msg.timeout or settings.command_timeout
