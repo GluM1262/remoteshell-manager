@@ -25,6 +25,11 @@ class ShellExecutor:
     async def execute(self, command: str) -> Tuple[str, str, int]:
         """Execute a shell command asynchronously.
         
+        **SECURITY WARNING**: This method uses shell=True which allows execution
+        of shell commands with full shell features (pipes, redirects, etc.).
+        This is intentional for this application but creates command injection risks.
+        Only use in trusted environments with validated input.
+        
         Args:
             command: The shell command to execute
             
@@ -38,7 +43,8 @@ class ShellExecutor:
         logger.info(f"Executing command: {command[:100]}...")
         
         try:
-            # Create subprocess
+            # Create subprocess with shell=True to support pipes, redirects, etc.
+            # This is a security trade-off for functionality
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
@@ -80,7 +86,9 @@ class ShellExecutor:
     def validate_command(self, command: str) -> Tuple[bool, str]:
         """Validate a command for basic security checks.
         
-        This is a basic validation. For production, implement more sophisticated checks.
+        **SECURITY NOTE**: This is basic validation only. For production use,
+        implement comprehensive command whitelisting, sandboxing, and
+        audit logging. This validation is not foolproof.
         
         Args:
             command: The command to validate
@@ -92,6 +100,7 @@ class ShellExecutor:
             return False, "Command cannot be empty"
         
         # Check for suspicious patterns (basic security)
+        # These patterns are case-sensitive as Linux commands are case-sensitive
         dangerous_patterns = [
             "rm -rf /",
             "mkfs",
@@ -100,9 +109,9 @@ class ShellExecutor:
             ":(){ :|:& };:",  # Fork bomb
         ]
         
-        command_lower = command.lower()
+        # Check both original and lowercase for flexibility
         for pattern in dangerous_patterns:
-            if pattern in command_lower:
+            if pattern in command or pattern.lower() in command.lower():
                 logger.warning(f"Blocked dangerous command pattern: {pattern}")
                 return False, f"Command contains dangerous pattern: {pattern}"
         
