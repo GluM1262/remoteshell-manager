@@ -1,0 +1,52 @@
+[Unit]
+Description=RemoteShell Client Agent
+Documentation=https://github.com/GluM1262/remoteshell-manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=remoteshell
+Group=remoteshell
+
+# Working directory
+WorkingDirectory=/opt/remoteshell/client
+
+# Environment
+EnvironmentFile=-/etc/remoteshell/client.env
+
+# Main process
+ExecStart=/usr/bin/python3 /opt/remoteshell/client/main.py --config /etc/remoteshell/config.yaml
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=5min
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/remoteshell /etc/remoteshell
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=remoteshell-client
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=512
+
+[Install]
+WantedBy=multi-user.target
