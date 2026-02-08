@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app/server
+      - ./shared:/app/shared
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    command: python -m server.main
+    networks:
+      - remoteshell
+
+networks:
+  remoteshell:
+    driver: bridge

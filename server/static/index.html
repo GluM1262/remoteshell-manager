@@ -69,5 +69,101 @@
     </div>
     
     <script src="/static/app.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖥️ RemoteShell Manager</h1>
+            <div class="header-stats">
+                <span id="total-devices">Devices: 0</span>
+                <span id="online-devices">Online: 0</span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Devices List -->
+            <aside class="devices-panel">
+                <h2>Devices</h2>
+                <div class="devices-list" id="devices-list">
+                    <!-- Devices will be populated here -->
+                </div>
+                <button class="refresh-btn" id="refresh-devices">
+                    🔄 Refresh
+                </button>
+            </aside>
+
+            <!-- Right Panel: Command Execution -->
+            <section class="command-panel">
+                <h2>Send Command</h2>
+                <form id="command-form">
+                    <div class="form-group">
+                        <label for="device-select">Target Device:</label>
+                        <select id="device-select" required>
+                            <option value="">Select device...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="command-input">Command:</label>
+                        <textarea 
+                            id="command-input" 
+                            placeholder="Enter shell command (e.g., ls -la)"
+                            rows="3"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timeout-input">Timeout (seconds):</label>
+                        <input 
+                            type="number" 
+                            id="timeout-input" 
+                            value="30" 
+                            min="1" 
+                            max="300"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="send-btn">
+                        ▶️ Send Command
+                    </button>
+                </form>
+
+                <!-- Command Result -->
+                <div class="result-panel" id="result-panel" style="display: none;">
+                    <h3>Command Result</h3>
+                    <div class="result-content" id="result-content">
+                        <!-- Results will be displayed here -->
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Command History -->
+        <section class="history-section">
+            <h2>Command History</h2>
+            <div class="history-filters">
+                <select id="history-device-filter">
+                    <option value="">All Devices</option>
+                </select>
+                <select id="history-status-filter">
+                    <option value="">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="pending">Pending</option>
+                    <option value="executing">Executing</option>
+                </select>
+                <button id="clear-filters">Clear Filters</button>
+            </div>
+            <div class="history-list" id="history-list">
+                <!-- History items will be populated here -->
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/websocket.js"></script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
