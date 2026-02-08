@@ -67,4 +67,5 @@ python -m pytest tests/
 
 - Python 3.9+
 - websockets>=12.0
+- pydantic>=2.0.0
 - PyYAML>=6.0
