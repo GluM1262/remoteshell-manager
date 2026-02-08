@@ -28,12 +28,30 @@ env/
 ENV/
 .venv
 
+# Virtual Environment
+venv/
+ENV/
+env/
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
 
 # OS
 .DS_Store
@@ -48,3 +66,7 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
