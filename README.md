@@ -1,32 +1,32 @@
 # RemoteShell Manager
 
-Система удалённого управления Linux-устройствами через WebSocket.
+Remote Linux device management system via WebSocket.
 
-## Описание
+## Description
 
-RemoteShell Manager - это клиент-серверное приложение для удалённого выполнения команд на Linux-устройствах в real-time режиме.
+RemoteShell Manager is a client-server application for remote execution of commands on Linux devices in real-time mode.
 
-## Технологический стек
+## Technology Stack
 
 - Python 3.9+
 - FastAPI
 - WebSocket
 - asyncio
 
-## Структура проекта
+## Project Structure
 
 ```
 remoteshell-manager/
-├── client/                 # Клиентская часть
-├── server/                 # Серверная часть
-├── shared/                 # Общие компоненты
-└── docker-compose.yml     # Docker конфигурация
+├── client/                 # Client application
+├── server/                 # Server application
+├── shared/                 # Shared components
+└── docker-compose.yml     # Docker configuration
 ```
 
-## Установка и запуск
+## Installation and Setup
 
-Инструкции будут добавлены в следующих коммитах.
+Instructions will be added in the following commits.
 
-## Лицензия
+## License
 
 MIT
