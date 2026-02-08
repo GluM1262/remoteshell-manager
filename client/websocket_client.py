@@ -7,7 +7,7 @@ import asyncio
 import websockets
 import json
 from typing import Optional, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 
 class WebSocketClient:
     """WebSocket client for server communication."""
@@ -132,7 +132,7 @@ class WebSocketClient:
             "stderr": result["stderr"],
             "exit_code": result["exit_code"],
             "execution_time": result["execution_time"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         await self._send_message(response)

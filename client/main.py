@@ -51,8 +51,6 @@ class RemoteShellClient:
         """Run the client."""
         try:
             await self.ws_client.start()
-        except KeyboardInterrupt:
-            self.logger.info("Received shutdown signal")
         except Exception as e:
             self.logger.error(f"Client error: {e}")
         finally:
@@ -83,12 +81,21 @@ def main():
     # Setup signal handlers
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+    
+    def handle_signal():
+        """Handle shutdown signals."""
+        client.logger.info("Received shutdown signal")
+        if client.ws_client:
+            client.ws_client.running = False
+    
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(client.shutdown()))
+        loop.add_signal_handler(sig, handle_signal)
     
     # Run client
     try:
         loop.run_until_complete(client.run())
+    except KeyboardInterrupt:
+        client.logger.info("Keyboard interrupt received")
     finally:
         loop.close()
 
