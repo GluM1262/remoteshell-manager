@@ -109,7 +109,7 @@ class WebSocketClient:
             cmd_msg = CommandMessage(command=command)
             
             # Send command
-            await self.websocket.send(cmd_msg.json())
+            await self.websocket.send(cmd_msg.model_dump_json())
             logger.debug(f"Sent command: {command[:100]}")
             
             # Wait for response
@@ -153,7 +153,7 @@ class WebSocketClient:
         
         try:
             ping_msg = PingMessage()
-            await self.websocket.send(ping_msg.json())
+            await self.websocket.send(ping_msg.model_dump_json())
             
             response = await asyncio.wait_for(self.websocket.recv(), timeout=5.0)
             response_data = json.loads(response)

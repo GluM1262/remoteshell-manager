@@ -5,14 +5,19 @@ for remote shell command execution.
 """
 
 import logging
+import sys
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .websocket_handler import ConnectionManager
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from server.websocket_handler import ConnectionManager
 
 # Configure logging
 logging.basicConfig(
@@ -136,10 +141,9 @@ def main():
     logger.info("Health check: http://localhost:8000/health")
     
     uvicorn.run(
-        "server.main:app",
+        app,
         host="0.0.0.0",
         port=8000,
-        reload=True,
         log_level="info"
     )
 

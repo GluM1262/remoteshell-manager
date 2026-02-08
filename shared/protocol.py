@@ -34,10 +34,11 @@ class CommandMessage(BaseModel):
     command: str = Field(..., min_length=1, description="Shell command to execute")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ResponseMessage(BaseModel):
@@ -57,10 +58,11 @@ class ResponseMessage(BaseModel):
     exit_code: int = Field(..., description="Exit code of the command")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class ErrorMessage(BaseModel):
@@ -76,10 +78,11 @@ class ErrorMessage(BaseModel):
     error: str = Field(..., min_length=1, description="Error description")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class PingMessage(BaseModel):
@@ -93,10 +96,11 @@ class PingMessage(BaseModel):
     type: MessageType = Field(default=MessageType.PING)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }
 
 
 class PongMessage(BaseModel):
@@ -110,7 +114,8 @@ class PongMessage(BaseModel):
     type: MessageType = Field(default=MessageType.PONG)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat()
         }
+    }

@@ -6,18 +6,17 @@ from clients.
 
 import json
 import logging
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .shell_executor import ShellExecutor
-
 # Add parent directory to path for shared imports
-import sys
-from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from server.shell_executor import ShellExecutor
 from shared.protocol import (
     CommandMessage,
     ResponseMessage,
@@ -93,7 +92,7 @@ class ConnectionManager:
                 error_response = ErrorMessage(
                     error=f"Invalid command: {error_msg}"
                 )
-                await self.send_message(websocket, error_response.dict())
+                await self.send_message(websocket, error_response.model_dump(mode='json'))
                 return
             
             # Execute command
@@ -105,14 +104,14 @@ class ConnectionManager:
                 stderr=stderr,
                 exit_code=exit_code
             )
-            await self.send_message(websocket, response.dict())
+            await self.send_message(websocket, response.model_dump(mode='json'))
             
         except Exception as e:
             logger.error(f"Error handling command from {client_id}: {str(e)}")
             error_response = ErrorMessage(
                 error=f"Error processing command: {str(e)}"
             )
-            await self.send_message(websocket, error_response.dict())
+            await self.send_message(websocket, error_response.model_dump(mode='json'))
     
     async def handle_ping(self, websocket: WebSocket) -> None:
         """Handle a ping message.
@@ -121,7 +120,7 @@ class ConnectionManager:
             websocket: The WebSocket connection
         """
         pong = PongMessage()
-        await self.send_message(websocket, pong.dict())
+        await self.send_message(websocket, pong.model_dump(mode='json'))
     
     async def handle_message(self, websocket: WebSocket, message: str, client_id: str) -> None:
         """Route incoming messages to appropriate handlers.
@@ -144,17 +143,17 @@ class ConnectionManager:
                 error_response = ErrorMessage(
                     error=f"Unknown message type: {message_type}"
                 )
-                await self.send_message(websocket, error_response.dict())
+                await self.send_message(websocket, error_response.model_dump(mode='json'))
                 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON from {client_id}: {str(e)}")
             error_response = ErrorMessage(
                 error=f"Invalid JSON: {str(e)}"
             )
-            await self.send_message(websocket, error_response.dict())
+            await self.send_message(websocket, error_response.model_dump(mode='json'))
         except Exception as e:
             logger.error(f"Error handling message from {client_id}: {str(e)}")
             error_response = ErrorMessage(
                 error=f"Error handling message: {str(e)}"
             )
-            await self.send_message(websocket, error_response.dict())
+            await self.send_message(websocket, error_response.model_dump(mode='json'))
