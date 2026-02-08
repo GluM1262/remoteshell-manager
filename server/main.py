@@ -41,6 +41,23 @@ except ImportError:
         ExportRequest,
         BulkCommandRequest,
     )
+"""
+FastAPI Main Application
+
+Main entry point for the RemoteShell Manager server.
+Provides WebSocket endpoint for command execution and REST API endpoints.
+"""
+
+import logging
+import sys
+from fastapi import FastAPI, WebSocket, WebSocketException, Query, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from server.config import settings
+from server.auth import validate_token, get_device_id, load_tokens_info
+from server.websocket_handler import handle_websocket, manager
+import uvicorn
+
 
 # Configure logging
 logging.basicConfig(
@@ -54,6 +71,13 @@ database: Optional[Database] = None
 queue_manager: Optional[QueueManager] = None
 history_manager: Optional[HistoryManager] = None
 connection_manager: Optional[ConnectionManager] = None
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -74,6 +98,20 @@ async def lifespan(app: FastAPI):
     connection_manager = ConnectionManager(database, queue_manager)
     
     logger.info(f"Server started on {settings.host}:{settings.port}")
+    """
+    Lifespan context manager for startup and shutdown events.
+    """
+    # Startup
+    logger.info("Starting RemoteShell Manager Server")
+    logger.info(f"Server running on {settings.host}:{settings.port}")
+    
+    # Load and log token information
+    token_info = load_tokens_info()
+    logger.info(f"Loaded {token_info['token_count']} device tokens")
+    if token_info['device_ids']:
+        logger.info(f"Configured devices: {', '.join(token_info['device_ids'])}")
+    else:
+        logger.warning("No device tokens configured! Add tokens to DEVICE_TOKENS environment variable")
     
     yield
     
@@ -648,3 +686,278 @@ if __name__ == "__main__":
         port=settings.port,
         reload=settings.debug
     )
+    logger.info("Shutting down RemoteShell Manager Server")
+import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from server.websocket_handler import ConnectionManager
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Create connection manager instance
+manager = ConnectionManager()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
+    logger.info("RemoteShell Manager server starting up...")
+    yield
+    # Shutdown
+    logger.info("RemoteShell Manager server shutting down...")
+
+
+# Initialize FastAPI application
+app = FastAPI(
+    title="RemoteShell Manager",
+    description="WebSocket-based remote shell command execution server",
+    description="Remote Linux device management via WebSocket",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+
+# Configure CORS middleware
+# Note: In production, specify exact allowed origins instead of "*"
+# For development/testing purposes, we allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO: Replace with specific origins in production
+    allow_credentials=False,  # Disabled for wildcard origins
+# Configure CORS
+# WARNING: allow_origins=["*"] is insecure for production!
+# In production, specify exact allowed origins, e.g., ["https://yourdomain.com"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure for production!
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint.
+    
+    Returns server status and basic information.
+    
+    Example:
+        GET /health
+        
+        Response:
+        {
+            "status": "healthy",
+            "connected_devices": 2,
+            "version": "1.0.0"
+        }
+    """
+    return {
+        "status": "healthy",
+        "connected_devices": len(manager.active_connections),
+        "version": "1.0.0"
+    }
+
+
+@app.get("/devices")
+async def get_devices():
+    """
+    Get list of connected devices.
+    
+    Returns information about all currently connected devices.
+    
+    Example:
+        GET /devices
+        
+        Response:
+        {
+            "devices": [
+                {
+                    "device_id": "device1",
+                    "connected_at": "2024-01-01T12:00:00",
+                    "last_command": "2024-01-01T12:05:00"
+                }
+            ],
+            "count": 1
+        }
+    """
+    devices = manager.get_connected_devices()
+    return {
+        "devices": devices,
+        "count": len(devices)
+    }
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    token: str = Query(..., description="Device authentication token")
+):
+    """
+    WebSocket endpoint for command execution.
+    
+    Connection flow:
+    1. Client connects with token: ws://localhost:8000/ws?token=DEVICE_TOKEN
+    2. Server validates token
+    3. If valid: accept connection and register device
+    4. If invalid: reject connection with error message
+    
+    Message protocol:
+    - Client sends: {"type": "command", "command": "ls -la", "id": "cmd_123"}
+    - Server responds: {"type": "response", "id": "cmd_123", "stdout": "...", "stderr": "...", "exit_code": 0}
+    - Error message: {"type": "error", "message": "error description"}
+    
+    Args:
+        websocket: WebSocket connection
+        token: Device authentication token (query parameter)
+    
+    Raises:
+        WebSocketException: If token is invalid
+    
+    Example usage with websocat:
+        websocat "ws://localhost:8000/ws?token=abc123token"
+        
+        Send command:
+        {"type": "command", "command": "echo hello", "id": "1"}
+        
+        Receive response:
+        {"type": "response", "id": "1", "stdout": "hello\\n", "stderr": "", "exit_code": 0, ...}
+    """
+    # Validate token
+    if not validate_token(token):
+        logger.warning(f"Invalid token attempt: {token[:10]}...")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+    
+    # Get device ID from token
+    device_id = get_device_id(token)
+    if not device_id:
+        logger.error("Valid token but no device ID found")
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Authentication error")
+        raise WebSocketException(code=status.WS_1011_INTERNAL_ERROR, reason="Authentication error")
+    
+    logger.info(f"Authenticated device: {device_id}")
+    
+    # Handle WebSocket connection
+    await handle_websocket(websocket, device_id)
+
+
+def main():
+    """
+    Main entry point for running the server.
+    
+    Starts uvicorn server with configured settings.
+    """
+    uvicorn.run(
+        "server.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,  # Set to True for development
+        log_level=settings.log_level.lower()
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "message": "RemoteShell Manager Server",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "websocket": "/ws"
+        }
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint.
+    
+    Returns:
+        JSON response with server status
+    """
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "active_connections": len(manager.active_connections)
+        }
+    )
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for client connections.
+    
+    Args:
+        websocket: WebSocket connection from client
+    """
+    # Generate unique client ID
+    client_id = str(uuid.uuid4())
+    
+    try:
+        # Accept connection
+        await manager.connect(websocket, client_id)
+        
+        # Send welcome message
+        welcome_msg = {
+            "type": "info",
+            "message": f"Connected to RemoteShell Manager. Client ID: {client_id}",
+            "client_id": client_id
+        }
+        await manager.send_message(websocket, welcome_msg)
+        
+        # Handle messages
+        while True:
+            try:
+                # Receive message from client
+                message = await websocket.receive_text()
+                
+                # Process message
+                await manager.handle_message(websocket, message, client_id)
+                
+            except WebSocketDisconnect:
+                logger.info(f"Client {client_id} disconnected normally")
+                break
+            except Exception as e:
+                logger.error(f"Error in WebSocket loop for {client_id}: {str(e)}")
+                break
+    
+    except Exception as e:
+        logger.error(f"Error in WebSocket endpoint for {client_id}: {str(e)}")
+    
+    finally:
+        # Clean up connection
+        manager.disconnect(client_id)
+
+
+def main():
+    """Run the server."""
+    import uvicorn
+    
+    logger.info("Starting RemoteShell Manager server on http://0.0.0.0:8000")
+    logger.info("WebSocket endpoint: ws://localhost:8000/ws")
+    logger.info("Health check: http://localhost:8000/health")
+    
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        log_level="info"
+    )
+
+
+if __name__ == "__main__":
+    main()
