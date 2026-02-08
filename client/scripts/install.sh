@@ -95,8 +95,11 @@ install_dependencies() {
 copy_files() {
     print_info "Copying client files..."
     
+    # Create client subdirectory
+    mkdir -p "$INSTALL_DIR/client"
+    
     # Copy Python files
-    cp -r *.py "$INSTALL_DIR/client/"
+    cp -r *.py "$INSTALL_DIR/client/" 2>/dev/null || true
     
     # Copy config template
     if [ -f "config.yaml.example" ]; then
@@ -137,8 +140,10 @@ set_permissions() {
     chown -R "$SERVICE_USER:$SERVICE_GROUP" "$LOG_DIR"
     chown -R "$SERVICE_USER:$SERVICE_GROUP" "$CONFIG_DIR"
     
-    # Secure config file
-    chmod 600 "$CONFIG_DIR/config.yaml"
+    # Secure config file if it exists
+    if [ -f "$CONFIG_DIR/config.yaml" ]; then
+        chmod 600 "$CONFIG_DIR/config.yaml"
+    fi
     
     print_info "Permissions set"
 }

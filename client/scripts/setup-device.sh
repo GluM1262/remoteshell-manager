@@ -79,7 +79,13 @@ cp "$CONFIG_FILE" "$CONFIG_FILE.backup"
 # Move new config
 mv /tmp/config.yaml.tmp "$CONFIG_FILE"
 chmod 600 "$CONFIG_FILE"
-chown remoteshell:remoteshell "$CONFIG_FILE"
+
+# Set ownership if remoteshell user exists
+if id remoteshell &>/dev/null; then
+    chown remoteshell:remoteshell "$CONFIG_FILE"
+else
+    echo "Warning: remoteshell user not found. Please run install.sh first or manually set ownership."
+fi
 
 echo
 echo "Configuration updated successfully!"
