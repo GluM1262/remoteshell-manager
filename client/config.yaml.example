@@ -40,3 +40,43 @@ security:
 logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR
   file: "remoteshell-client.log"
+# RemoteShell Client Configuration
+
+# Server connection settings
+server:
+  host: "localhost"          # Server hostname or IP
+  port: 8000                 # Server port
+  use_ssl: false             # Use wss:// instead of ws://
+  reconnect_interval: 5      # Seconds between reconnection attempts
+  max_reconnect_attempts: 0  # 0 = infinite, >0 = max attempts
+  ping_interval: 30          # Keep-alive ping interval (seconds)
+  ping_timeout: 10           # Ping timeout (seconds)
+
+# Device authentication
+device:
+  device_id: "device1"       # Unique device identifier
+  token: "abc123token"       # Authentication token
+  
+# Command execution settings
+execution:
+  timeout: 30                # Default command timeout (seconds)
+  shell: "/bin/bash"         # Shell to use for command execution
+  working_directory: "~"     # Default working directory
+  capture_output: true       # Capture stdout/stderr
+  
+# Logging settings
+logging:
+  level: "INFO"              # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "client.log"         # Log file path (null for no file logging)
+  console: true              # Log to console
+  max_size: 10485760         # Max log file size in bytes (10MB)
+  backup_count: 5            # Number of backup log files
+
+# Security settings
+security:
+  validate_ssl: true         # Validate SSL certificates
+  allowed_commands: []       # Empty = allow all, or list specific commands
+  blocked_commands:          # Commands that should never be executed
+    - "rm -rf /"
+    - "mkfs"
+    - "dd if=/dev/zero"
