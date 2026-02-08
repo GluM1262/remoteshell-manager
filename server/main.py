@@ -380,7 +380,7 @@ if __name__ == "__main__":
     
     # Check if running as root (warning)
     import os
-    if os.geteuid() == 0:
+    if hasattr(os, 'geteuid') and os.geteuid() == 0:
         logger.warning("⚠️  WARNING: Running as root is not recommended!")
         logger.warning(f"⚠️  Consider running as user '{settings.run_as_user}'")
     

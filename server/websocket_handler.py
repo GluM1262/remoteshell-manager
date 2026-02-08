@@ -227,8 +227,17 @@ class WebSocketHandler:
         
         try:
             # Message handling loop
-            async for message in websocket.iter_json():
-                await self._handle_message(device_id, message)
+            while True:
+                try:
+                    message_text = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                    message = json.loads(message_text)
+                    await self._handle_message(device_id, message)
+                except asyncio.TimeoutError:
+                    # Normal timeout, continue
+                    continue
+                except Exception as e:
+                    logger.error(f"Error receiving message: {e}")
+                    break
         
         except WebSocketDisconnect:
             logger.info(f"Device disconnected: {device_id}")

@@ -7,6 +7,7 @@ import asyncio
 import logging
 import signal
 import sys
+import json
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
@@ -133,14 +134,15 @@ async def main_loop(client, executor, config):
                             result = await executor.execute(command, timeout)
                             
                             # Send result back to server
-                            await client.websocket.send_json({
+                            result_msg = {
                                 "type": "command_result",
                                 "command": command,
                                 "stdout": result["stdout"],
                                 "stderr": result["stderr"],
                                 "exit_code": result["exit_code"],
                                 "execution_time": result["execution_time"]
-                            })
+                            }
+                            await client.websocket.send(json.dumps(result_msg))
                             
                             logger.info(f"Command completed with exit code {result['exit_code']}")
                         
